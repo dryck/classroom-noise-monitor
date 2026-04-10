@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  base: '/sound-level-monitor/',
+  base: '/classroom-noise-monitor/',
   plugins: [
     react(),
     VitePWA({
@@ -19,8 +19,8 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/sound-level-monitor/',
-        start_url: '/sound-level-monitor/',
+        scope: '/classroom-noise-monitor/',
+        start_url: '/classroom-noise-monitor/',
         icons: [
           {
             src: '/icons/icon-72x72.png',
