@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/sound-level-monitor/sw.js', { scope: '/sound-level-monitor/' })})}
