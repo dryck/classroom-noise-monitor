@@ -81,6 +81,9 @@ function App() {
       
       {showSettings && (
         <Settings
+          currentTheme={settings.theme}
+          customImages={settings.customImages}
+          onThemeChange={(theme) => setSettings(prev => ({ ...prev, theme }))}
           onClose={() => setShowSettings(false)}
         />
       )}
