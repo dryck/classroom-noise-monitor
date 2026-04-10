@@ -12,6 +12,9 @@ interface AppSettings {
   customSounds: Sound[]
   customImages: CustomImage[]
   isMuted: boolean
+  backgroundColor: string
+  upDelay: number
+  downDelay: number
 }
 
 const defaultSettings: AppSettings = {
@@ -21,6 +24,9 @@ const defaultSettings: AppSettings = {
   customSounds: [],
   customImages: [],
   isMuted: false,
+  backgroundColor: 'dark',
+  upDelay: 2,
+  downDelay: 4,
 }
 
 function App() {
@@ -67,6 +73,18 @@ function App() {
     setSettings(prev => ({ ...prev, isMuted: !prev.isMuted }))
   }, [])
 
+  const handleBackgroundChange = useCallback((color: string) => {
+    setSettings(prev => ({ ...prev, backgroundColor: color }))
+  }, [])
+
+  const handleUpDelayChange = useCallback((delay: number) => {
+    setSettings(prev => ({ ...prev, upDelay: delay }))
+  }, [])
+
+  const handleDownDelayChange = useCallback((delay: number) => {
+    setSettings(prev => ({ ...prev, downDelay: delay }))
+  }, [])
+
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(() => {
@@ -98,6 +116,9 @@ function App() {
         customSounds={settings.customSounds}
         customImages={settings.customImages}
         isMuted={settings.isMuted}
+        backgroundColor={settings.backgroundColor}
+        upDelay={settings.upDelay}
+        downDelay={settings.downDelay}
         onSettingsClick={() => setShowSettings(true)}
         onFullscreenClick={toggleFullscreen}
         onMuteClick={handleMuteToggle}
@@ -112,6 +133,9 @@ function App() {
           customSounds={settings.customSounds}
           customImages={settings.customImages}
           isMuted={settings.isMuted}
+          backgroundColor={settings.backgroundColor}
+          upDelay={settings.upDelay}
+          downDelay={settings.downDelay}
           onThemeChange={handleThemeChange}
           onThresholdChange={handleThresholdChange}
           onSoundChange={handleSoundChange}
@@ -119,6 +143,9 @@ function App() {
           onCustomImageAdd={handleCustomImageAdd}
           onCustomImageRemove={handleCustomImageRemove}
           onMuteToggle={handleMuteToggle}
+          onBackgroundChange={handleBackgroundChange}
+          onUpDelayChange={handleUpDelayChange}
+          onDownDelayChange={handleDownDelayChange}
           onClose={() => setShowSettings(false)}
         />
       )}

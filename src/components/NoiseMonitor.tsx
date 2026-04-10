@@ -13,6 +13,9 @@ interface NoiseMonitorProps {
   customSounds: Sound[]
   customImages: CustomImage[]
   isMuted: boolean
+  backgroundColor?: string
+  upDelay?: number
+  downDelay?: number
   onSettingsClick: () => void
   onFullscreenClick: () => void
   onMuteClick: () => void
@@ -26,20 +29,29 @@ export function NoiseMonitor({
   customSounds,
   customImages,
   isMuted,
+  backgroundColor = 'dark',
+  upDelay = 2,
+  downDelay = 4,
   onSettingsClick,
   onFullscreenClick,
   onMuteClick,
   isFullscreen,
 }: NoiseMonitorProps) {
-  const [noiseLevel, setNoiseLevel] = useState(0)
+  const [, setNoiseLevel] = useState(0)
+  const [displayLevel, setDisplayLevel] = useState(0) // Level with delay
   const [isTooLoud, setIsTooLoud] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
-  const wasTooLoudRef = useRef(false)
+  
+  // Delay logic refs
+  const pendingLevelRef = useRef(1)
+  const pendingSinceRef = useRef<number | null>(null)
+  const currentLevelRef = useRef(1)
   
   const { playAlarm } = useAudio(selectedSound, customSounds, isMuted)
 
@@ -74,29 +86,59 @@ export function NoiseMonitor({
     }
     setIsListening(false)
     setNoiseLevel(0)
+    setDisplayLevel(0)
     setIsTooLoud(false)
   }, [])
+
+  // Calculate target level based on noise
+  const getTargetLevel = useCallback((level: number) => {
+    if (level >= threshold * 1.2) return 4
+    if (level >= threshold * 0.9) return 3
+    if (level >= threshold * 0.6) return 2
+    return 1
+  }, [threshold])
 
   useEffect(() => {
     if (!isListening || !analyserRef.current) return
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
+    let lastAlarmTime = 0
     
     const updateNoiseLevel = () => {
       if (!analyserRef.current) return
       
       analyserRef.current.getByteFrequencyData(dataArray)
       const level = calculateNoiseLevel(dataArray)
-      const tooLoud = level > threshold
+      const targetLevel = getTargetLevel(level)
+      const now = Date.now()
       
       setNoiseLevel(level)
-      setIsTooLoud(tooLoud)
       
-      // Play alarm when threshold is crossed
-      if (tooLoud && !wasTooLoudRef.current) {
-        playAlarm()
+      // Delay logic
+      if (targetLevel !== pendingLevelRef.current) {
+        pendingLevelRef.current = targetLevel
+        pendingSinceRef.current = now
       }
-      wasTooLoudRef.current = tooLoud
+      
+      // Check if delay has passed
+      if (pendingSinceRef.current) {
+        const delay = targetLevel > currentLevelRef.current 
+          ? upDelay * 1000 
+          : downDelay * 1000
+        
+        if (now - pendingSinceRef.current >= delay) {
+          currentLevelRef.current = targetLevel
+          pendingSinceRef.current = null
+          setDisplayLevel(targetLevel)
+          setIsTooLoud(targetLevel === 4)
+          
+          // Play alarm when reaching level 4
+          if (targetLevel === 4 && now - lastAlarmTime > 5000) {
+            playAlarm()
+            lastAlarmTime = now
+          }
+        }
+      }
       
       animationFrameRef.current = requestAnimationFrame(updateNoiseLevel)
     }
@@ -108,7 +150,7 @@ export function NoiseMonitor({
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [isListening, threshold, playAlarm])
+  }, [isListening, threshold, upDelay, downDelay, getTargetLevel, playAlarm])
 
   useEffect(() => {
     return () => {
@@ -117,7 +159,13 @@ export function NoiseMonitor({
   }, [stopListening])
 
   const renderTheme = () => {
-    const props = { noiseLevel, threshold, isTooLoud, customImages }
+    const props = { 
+      noiseLevel: displayLevel * 25, // Convert 1-4 to 0-100 scale
+      threshold: 100, 
+      isTooLoud: displayLevel === 4,
+      customImages,
+      backgroundColor,
+    }
     
     switch (theme) {
       case 'egg':
@@ -228,7 +276,7 @@ export function NoiseMonitor({
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${isTooLoud ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`} />
               <span className="font-semibold text-gray-700">
-                {Math.round(noiseLevel)} dB
+                Level {displayLevel}/4
               </span>
               <span className="text-gray-400">|</span>
               <span className={`font-medium ${isTooLoud ? 'text-red-600' : 'text-green-600'}`}>
