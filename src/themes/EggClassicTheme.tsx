@@ -5,17 +5,6 @@ export function EggClassicTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps
   const ratio = noiseLevel / threshold
   const level = isTooLoud ? 4 : ratio < 0.5 ? 1 : ratio < 0.8 ? 2 : 3
 
-  // Get status text based on level
-  const getStatusText = () => {
-    switch (level) {
-      case 1: return 'Quiet'
-      case 2: return 'Getting loud'
-      case 3: return 'Careful...'
-      case 4: return 'TOO LOUD!'
-      default: return 'Quiet'
-    }
-  }
-
   // Egg SVG paths for each state
   const renderEgg = () => {
     const baseEgg = (
@@ -127,11 +116,11 @@ export function EggClassicTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps
       </svg>
 
       {/* Level dots - 4 colored dots showing current level */}
-      <div className="flex gap-4 mt-6">
+      <div className="flex gap-3 sm:gap-4 mt-4 sm:mt-6">
         {[1, 2, 3, 4].map((l) => (
           <div
             key={l}
-            className={`w-4 h-4 rounded-full transition-all duration-300 ${
+            className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-300 ${
               l <= level
                 ? l === 4
                   ? 'bg-red-500 scale-125'
@@ -144,17 +133,6 @@ export function EggClassicTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps
             }`}
           />
         ))}
-      </div>
-
-      {/* Status text */}
-      <div className="mt-6 text-center">
-        <p
-          className={`text-2xl font-bold transition-colors ${
-            isTooLoud ? 'text-red-400' : 'text-white'
-          }`}
-        >
-          {getStatusText()}
-        </p>
       </div>
     </div>
   )

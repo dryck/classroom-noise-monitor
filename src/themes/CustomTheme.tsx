@@ -20,6 +20,26 @@ export function CustomTheme({ noiseLevel, threshold, isTooLoud, customImages }: 
   const scale = 1 + (isTooLoud ? 0.05 : 0)
   const shakeAmount = isTooLoud ? intensity * 5 : 0
 
+  // Calculate which dots should be active based on noise level ratio
+  const ratio = noiseLevel / threshold
+  const getActiveDotCount = () => {
+    if (ratio < 0.25) return 1
+    if (ratio < 0.5) return 2
+    if (ratio < 0.75) return 3
+    return 4
+  }
+  const activeDots = getActiveDotCount()
+
+  // Get color based on noise level
+  const getDotColor = (index: number) => {
+    const isActive = index < activeDots
+    if (!isActive) return '#E5E7EB' // gray-200 for inactive
+    if (isTooLoud) return '#EF4444' // red-500
+    if (ratio > 0.75) return '#F59E0B' // amber-500
+    if (ratio > 0.5) return '#3B82F6' // blue-500
+    return '#10B981' // emerald-500
+  }
+
   if (!currentImage) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-8">
@@ -35,18 +55,18 @@ export function CustomTheme({ noiseLevel, threshold, isTooLoud, customImages }: 
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center w-full max-w-[375px] mx-auto px-4">
       {/* Image container with effects */}
       <div
-        className="relative transition-transform duration-100"
+        className="relative transition-transform duration-100 w-full"
         style={{
           transform: isTooLoud
             ? `translate(${Math.random() * shakeAmount - shakeAmount/2}px, ${Math.random() * shakeAmount - shakeAmount/2}px) scale(${scale})`
             : `scale(${scale})`,
         }}
       >
-        {/* Main image */}
-        <div className="relative w-72 h-72 rounded-3xl overflow-hidden shadow-2xl">
+        {/* Main image - responsive sizing for mobile */}
+        <div className="relative w-full aspect-square max-w-[280px] mx-auto rounded-3xl overflow-hidden shadow-2xl">
           <img
             src={currentImage.url}
             alt={currentImage.name}
@@ -65,17 +85,6 @@ export function CustomTheme({ noiseLevel, threshold, isTooLoud, customImages }: 
                 : `radial-gradient(circle, transparent 30%, ${noiseLevel > threshold * 0.7 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'} 100%)`,
             }}
           />
-          
-          {/* Noise level indicator overlay */}
-          <div className="absolute bottom-0 left-0 right-0 h-2 bg-gray-200">
-            <div
-              className="h-full transition-all duration-200"
-              style={{
-                width: `${Math.min((noiseLevel / threshold) * 100, 100)}%`,
-                backgroundColor: isTooLoud ? '#EF4444' : noiseLevel > threshold * 0.7 ? '#F59E0B' : '#10B981',
-              }}
-            />
-          </div>
         </div>
         
         {/* Glow effect when too loud */}
@@ -84,23 +93,20 @@ export function CustomTheme({ noiseLevel, threshold, isTooLoud, customImages }: 
         )}
       </div>
       
-      {/* Status indicator */}
-      <div className="mt-8 flex items-center gap-3">
-        <div 
-          className="w-4 h-4 rounded-full animate-pulse"
-          style={{
-            backgroundColor: isTooLoud ? '#EF4444' : noiseLevel > threshold * 0.7 ? '#F59E0B' : '#10B981',
-          }}
-        />
-        <p className={`text-2xl font-bold ${isTooLoud ? 'text-red-500' : 'text-gray-700'}`}>
-          {isTooLoud ? 'TOO LOUD!' : currentImage.name}
-        </p>
+      {/* 4 Colored dots indicator - BELOW the image */}
+      <div className="mt-6 flex items-center justify-center gap-3">
+        {[0, 1, 2, 3].map((index) => (
+          <div
+            key={index}
+            className="w-4 h-4 rounded-full transition-all duration-300"
+            style={{
+              backgroundColor: getDotColor(index),
+              transform: index < activeDots ? 'scale(1)' : 'scale(0.8)',
+              opacity: index < activeDots ? 1 : 0.5,
+            }}
+          />
+        ))}
       </div>
-      
-      {/* Noise level text */}
-      <p className="mt-2 text-gray-500">
-        {Math.round(noiseLevel)} dB / {threshold} dB threshold
-      </p>
     </div>
   )
 }

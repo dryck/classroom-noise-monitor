@@ -4,21 +4,26 @@ export function GlassTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps) {
   // Calculate fill level (0 to 100)
   const fillLevel = Math.min((noiseLevel / threshold) * 100, 100)
   
-  // Color based on noise level
-  const getFillColor = () => {
-    if (isTooLoud) return '#EF4444' // Red
+  // Determine active level (0-3) for the 4 dots
+  const getActiveLevel = () => {
     const ratio = noiseLevel / threshold
-    if (ratio < 0.5) return '#10B981' // Green
-    if (ratio < 0.8) return '#F59E0B' // Yellow
-    return '#EF4444' // Red
+    if (ratio < 0.25) return 0
+    if (ratio < 0.5) return 1
+    if (ratio < 0.75) return 2
+    return 3
   }
 
-  const fillColor = getFillColor()
+  const activeLevel = getActiveLevel()
+  
+  // Colors for each dot level
+  const dotColors = ['#10B981', '#10B981', '#F59E0B', '#EF4444'] // Green, Green, Yellow, Red
+  const activeColor = isTooLoud ? '#EF4444' : dotColors[activeLevel]
+  
   // Use static wave offset to prevent re-renders
   const waveOffset = 0
 
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex flex-col items-center justify-center">
       <svg
         width="200"
         height="350"
@@ -49,8 +54,8 @@ export function GlassTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps) {
           </clipPath>
           
           <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={fillColor} stopOpacity="0.8" />
-            <stop offset="100%" stopColor={fillColor} stopOpacity="1" />
+            <stop offset="0%" stopColor={activeColor} stopOpacity="0.8" />
+            <stop offset="100%" stopColor={activeColor} stopOpacity="1" />
           </linearGradient>
         </defs>
         
@@ -74,7 +79,7 @@ export function GlassTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps) {
                   Q 130 ${325 - (fillLevel * 2.8) + Math.sin(waveOffset * 0.1) * 5}, 
                   160 ${320 - (fillLevel * 2.8)} 
                   L 160 320 L 40 320 Z`}
-              fill={fillColor}
+              fill={activeColor}
               opacity="0.9"
             />
           )}
@@ -150,11 +155,20 @@ export function GlassTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps) {
         )}
       </svg>
       
-      {/* Status text */}
-      <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
-        <p className={`text-2xl font-bold transition-colors ${isTooLoud ? 'text-red-500 animate-pulse' : 'text-gray-700'}`}>
-          {isTooLoud ? 'TOO LOUD!' : `${Math.round(fillLevel)}%`}
-        </p>
+      {/* 4 Colored dots below the glass - positioned below the SVG */}
+      <div className="flex items-center justify-center gap-3 mt-4">
+        {[0, 1, 2, 3].map((level) => (
+          <div
+            key={level}
+            className={`w-4 h-4 rounded-full transition-all duration-200 ${
+              level <= activeLevel ? 'scale-100 opacity-100' : 'scale-75 opacity-30'
+            }`}
+            style={{
+              backgroundColor: dotColors[level],
+              boxShadow: level <= activeLevel ? `0 0 8px ${dotColors[level]}` : 'none'
+            }}
+          />
+        ))}
       </div>
     </div>
   )

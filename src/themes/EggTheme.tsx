@@ -19,8 +19,8 @@ export function EggTheme({ noiseLevel, threshold, isTooLoud, backgroundColor: _b
   }
 
   return (
-    <div className="relative flex items-center justify-center">
-      {/* Shake container */}
+    <div className="flex flex-col items-center justify-center gap-4">
+      {/* Egg container */}
       <div
         className="transition-transform duration-100"
         style={{
@@ -30,8 +30,8 @@ export function EggTheme({ noiseLevel, threshold, isTooLoud, backgroundColor: _b
         }}
       >
         <svg
-          width="300"
-          height="400"
+          width="280"
+          height="320"
           viewBox="0 0 300 400"
           className="drop-shadow-2xl"
         >
@@ -147,8 +147,8 @@ export function EggTheme({ noiseLevel, threshold, isTooLoud, backgroundColor: _b
         </svg>
       </div>
       
-      {/* Level dots - как в оригинале */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4">
+      {/* Level dots - positioned below the egg */}
+      <div className="flex gap-3 mt-2">
         {[1, 2, 3, 4].map((l) => (
           <div
             key={l}
@@ -162,13 +162,6 @@ export function EggTheme({ noiseLevel, threshold, isTooLoud, backgroundColor: _b
             }`}
           />
         ))}
-      </div>
-
-      {/* Status text */}
-      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 text-center">
-        <p className={`text-2xl font-bold transition-colors ${isTooLoud ? 'text-red-400 animate-pulse' : 'text-white'}`}>
-          {isTooLoud ? 'TOO LOUD!' : level === 3 ? 'Careful...' : level === 2 ? 'Getting loud' : 'Quiet'}
-        </p>
       </div>
     </div>
   )
