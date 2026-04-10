@@ -20,6 +20,30 @@ const themes: { id: Theme; name: string; description: string; preview: string }[
     preview: '🥛',
   },
   {
+    id: 'thermometer',
+    name: 'Thermometer',
+    description: 'Rising temperature shows noise level',
+    preview: '🌡️',
+  },
+  {
+    id: 'battery',
+    name: 'Battery',
+    description: 'Battery drains as noise increases',
+    preview: '🔋',
+  },
+  {
+    id: 'weather',
+    name: 'Weather',
+    description: 'Sunny to thunderstorm progression',
+    preview: '☀️',
+  },
+  {
+    id: 'volcano',
+    name: 'Volcano',
+    description: 'Volcano builds pressure until eruption',
+    preview: '🌋',
+  },
+  {
     id: 'custom',
     name: 'Custom',
     description: 'Use your own uploaded images',

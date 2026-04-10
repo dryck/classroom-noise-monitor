@@ -3,6 +3,10 @@ import { Theme, Sound, CustomImage } from '../types'
 import { EggTheme } from '../themes/EggTheme'
 import { GlassTheme } from '../themes/GlassTheme'
 import { CustomTheme } from '../themes/CustomTheme'
+import { ThermometerTheme } from '../themes/ThermometerTheme'
+import { BatteryTheme } from '../themes/BatteryTheme'
+import { WeatherTheme } from '../themes/WeatherTheme'
+import { VolcanoTheme } from '../themes/VolcanoTheme'
 import { useAudio } from '../hooks/useAudio'
 import { calculateNoiseLevel } from '../utils/noiseCalculator'
 
@@ -13,6 +17,9 @@ interface NoiseMonitorProps {
   customSounds: Sound[]
   customImages: CustomImage[]
   isMuted: boolean
+  backgroundColor?: string
+  upDelay?: number
+  downDelay?: number
   onSettingsClick: () => void
   onFullscreenClick: () => void
   onMuteClick: () => void
@@ -26,6 +33,9 @@ export function NoiseMonitor({
   customSounds,
   customImages,
   isMuted,
+  backgroundColor = 'dark',
+  upDelay: _upDelay = 2,
+  downDelay: _downDelay = 4,
   onSettingsClick,
   onFullscreenClick,
   onMuteClick,
@@ -117,7 +127,17 @@ export function NoiseMonitor({
   }, [stopListening])
 
   const renderTheme = () => {
-    const props = { noiseLevel, threshold, isTooLoud, customImages }
+    const props = { noiseLevel, threshold, isTooLoud, customImages, backgroundColor }
+    
+    // Convert to level format for new themes
+    const getLevel = (): 'quiet' | 'moderate' | 'loud' | 'tooLoud' => {
+      if (isTooLoud) return 'tooLoud'
+      const ratio = noiseLevel / threshold
+      if (ratio < 0.5) return 'quiet'
+      if (ratio < 0.8) return 'moderate'
+      return 'loud'
+    }
+    const levelProps = { level: getLevel() }
     
     switch (theme) {
       case 'egg':
@@ -126,6 +146,14 @@ export function NoiseMonitor({
         return <GlassTheme {...props} />
       case 'custom':
         return <CustomTheme {...props} />
+      case 'thermometer':
+        return <ThermometerTheme {...levelProps} />
+      case 'battery':
+        return <BatteryTheme {...levelProps} />
+      case 'weather':
+        return <WeatherTheme {...levelProps} />
+      case 'volcano':
+        return <VolcanoTheme {...levelProps} />
       default:
         return <EggTheme {...props} />
     }

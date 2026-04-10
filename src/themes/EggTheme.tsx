@@ -1,10 +1,13 @@
 import { ThemeProps } from '../types'
 
-export function EggTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps) {
+export function EggTheme({ noiseLevel, threshold, isTooLoud, backgroundColor: _bg }: ThemeProps) {
   // Calculate animation intensity based on noise level
   const intensity = Math.min(noiseLevel / threshold, 1.5)
   const shakeAmount = isTooLoud ? intensity * 8 : 0
   const scale = 1 + (intensity * 0.1)
+  
+  // Calculate level (1-4)
+  const level = isTooLoud ? 4 : intensity < 0.5 ? 1 : intensity < 0.8 ? 2 : 3
   
   // Color interpolation
   const getColor = () => {
@@ -144,10 +147,27 @@ export function EggTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps) {
         </svg>
       </div>
       
+      {/* Level dots - как в оригинале */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4">
+        {[1, 2, 3, 4].map((l) => (
+          <div
+            key={l}
+            className={`w-4 h-4 rounded-full transition-all duration-300 ${
+              l <= level 
+                ? l === 4 ? 'bg-red-500 scale-125 shadow-lg shadow-red-500/50' 
+                  : l === 3 ? 'bg-orange-500 scale-110' 
+                  : l === 2 ? 'bg-yellow-500' 
+                  : 'bg-green-500'
+                : 'bg-white/20'
+            }`}
+          />
+        ))}
+      </div>
+
       {/* Status text */}
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center">
-        <p className={`text-2xl font-bold transition-colors ${isTooLoud ? 'text-red-500 animate-pulse' : 'text-gray-700'}`}>
-          {isTooLoud ? 'TOO LOUD!' : noiseLevel > threshold * 0.7 ? 'Getting Loud...' : 'Nice and Quiet'}
+      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 text-center">
+        <p className={`text-2xl font-bold transition-colors ${isTooLoud ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+          {isTooLoud ? 'TOO LOUD!' : level === 3 ? 'Careful...' : level === 2 ? 'Getting loud' : 'Quiet'}
         </p>
       </div>
     </div>

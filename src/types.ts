@@ -1,4 +1,4 @@
-export type Theme = 'egg' | 'glass' | 'custom'
+export type Theme = 'egg' | 'glass' | 'custom' | 'thermometer' | 'battery' | 'weather' | 'volcano'
 
 export interface Sound {
   id: string
@@ -25,4 +25,11 @@ export interface ThemeProps {
   threshold: number
   isTooLoud: boolean
   customImages: CustomImage[]
+  backgroundColor?: string
+}
+
+// Props for new themes that use 'level' instead of noiseLevel/threshold
+export interface NewThemeProps {
+  level: 'quiet' | 'moderate' | 'loud' | 'tooLoud'
+  intensity?: number
 }
