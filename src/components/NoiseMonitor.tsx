@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Theme, Sound, CustomImage } from '../types'
 import { EggTheme } from '../themes/EggTheme'
+import { EggClassicTheme } from '../themes/EggClassicTheme'
 import { GlassTheme } from '../themes/GlassTheme'
 import { CustomTheme } from '../themes/CustomTheme'
 import { ThermometerTheme } from '../themes/ThermometerTheme'
@@ -142,6 +143,8 @@ export function NoiseMonitor({
     switch (theme) {
       case 'egg':
         return <EggTheme {...props} />
+      case 'eggClassic':
+        return <EggClassicTheme {...props} />
       case 'glass':
         return <GlassTheme {...props} />
       case 'custom':
