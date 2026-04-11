@@ -32,8 +32,8 @@ export function Settings({ currentTheme, customImages, onThemeChange, onClose }:
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="p-4 sm:p-6 overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800">Settings</h2>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
@@ -44,7 +44,7 @@ export function Settings({ currentTheme, customImages, onThemeChange, onClose }:
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mb-6 bg-gray-100 p-1 rounded-xl">
+          <div className="flex gap-2 mb-4 sm:mb-6 bg-gray-100 p-1 rounded-xl flex-shrink-0">
             <button
               onClick={() => setActiveTab('themes')}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
@@ -67,7 +67,8 @@ export function Settings({ currentTheme, customImages, onThemeChange, onClose }:
             </button>
           </div>
 
-          {/* Themes Tab */}
+          {/* Tab Content */}
+          <div className="flex-1 min-h-0">
           {activeTab === 'themes' && (
             <ThemeSelector
               currentTheme={currentTheme}
@@ -136,6 +137,7 @@ export function Settings({ currentTheme, customImages, onThemeChange, onClose }:
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

@@ -131,24 +131,12 @@ export function EggTheme({ noiseLevel, threshold, isTooLoud, backgroundColor: _b
             </>
           )}
           
-          {/* Noise indicator ring */}
-          <circle
-            cx="150"
-            cy="200"
-            r="170"
-            fill="none"
-            stroke={getColor()}
-            strokeWidth="8"
-            opacity={0.3 + (intensity * 0.4)}
-            strokeDasharray={`${(noiseLevel / 100) * 1068} 1068`}
-            transform="rotate(-90 150 200)"
-            className="transition-all duration-200"
-          />
+
         </svg>
       </div>
       
       {/* Level dots - positioned below the egg */}
-      <div className="flex gap-3 mt-2">
+      <div className="flex gap-3 mt-6">
         {[1, 2, 3, 4].map((l) => (
           <div
             key={l}
@@ -158,7 +146,7 @@ export function EggTheme({ noiseLevel, threshold, isTooLoud, backgroundColor: _b
                   : l === 3 ? 'bg-orange-500 scale-110' 
                   : l === 2 ? 'bg-yellow-500' 
                   : 'bg-green-500'
-                : 'bg-white/20'
+                : 'bg-gray-400/30'
             }`}
           />
         ))}
