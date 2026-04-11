@@ -75,16 +75,6 @@ export const BatteryTheme: React.FC<NewThemeProps> = ({ level }) => {
           </div>
         )}
 
-        {/* Warning flash for loud/tooLoud */}
-        {(level === 'loud' || level === 'tooLoud') && (
-          <div className="absolute -top-12 left-1/2 -translate-x-1/2 animate-pulse">
-            <svg width="40" height="40" viewBox="0 0 40 40">
-              <path d="M20 5 L35 35 H5 Z" fill={level === 'tooLoud' ? '#EF4444' : '#F97316'} stroke="white" strokeWidth="2"/>
-              <text x="20" y="30" textAnchor="middle" fontSize="20" fill="white" fontWeight="bold">!</text>
-            </svg>
-          </div>
-        )}
-
         {/* Main battery */}
         <div className="relative">
           <svg width="200" height="280" viewBox="0 0 200 280" className="drop-shadow-2xl">
@@ -174,31 +164,25 @@ export const BatteryTheme: React.FC<NewThemeProps> = ({ level }) => {
           </svg>
         </div>
 
-        {/* Percentage display */}
-        <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
-          <div className={`px-4 py-2 rounded-xl font-bold text-lg transition-all duration-300 ${
-            level === 'quiet' ? 'bg-green-500 text-white' :
-            level === 'moderate' ? 'bg-lime-500 text-white' :
-            level === 'loud' ? 'bg-orange-500 text-white' :
-            'bg-red-500 text-white animate-pulse'
-          }`}>
-            {batteryLevel}%
-          </div>
-        </div>
-
-        {/* Status text */}
-        <div className="absolute -right-24 top-1/2 -translate-y-1/2">
-          <div className={`px-3 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all duration-300 ${
-            level === 'quiet' ? 'bg-green-200 text-green-800' :
-            level === 'moderate' ? 'bg-lime-200 text-lime-800' :
-            level === 'loud' ? 'bg-orange-200 text-orange-800' :
-            'bg-red-200 text-red-800 animate-bounce'
-          }`}>
-            {level === 'quiet' && '🔋 Full!'}
-            {level === 'moderate' && '⚡ Good'}
-            {level === 'loud' && '🔌 Low!'}
-            {level === 'tooLoud' && '💀 Critical!'}
-          </div>
+        {/* 4 Colored dots indicator - BELOW the battery */}
+        <div className="flex items-center justify-center gap-3 mt-6">
+          {[0, 1, 2, 3].map((dotIndex) => {
+            const levelIndex = level === 'quiet' ? 0 : level === 'moderate' ? 1 : level === 'loud' ? 2 : 3;
+            const dotColors = ['#22C55E', '#84CC16', '#F97316', '#EF4444']; // Green, Lime, Orange, Red
+            const isActive = dotIndex <= levelIndex;
+            return (
+              <div
+                key={dotIndex}
+                className={`w-4 h-4 rounded-full transition-all duration-300 ${
+                  isActive ? 'scale-100 opacity-100' : 'scale-75 opacity-30'
+                }`}
+                style={{
+                  backgroundColor: dotColors[dotIndex],
+                  boxShadow: isActive ? `0 0 8px ${dotColors[dotIndex]}` : 'none'
+                }}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

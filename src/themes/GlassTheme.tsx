@@ -146,13 +146,7 @@ export function GlassTheme({ noiseLevel, threshold, isTooLoud }: ThemeProps) {
         <line x1="120" y1="200" x2="140" y2="200" stroke="rgba(150,150,150,0.4)" strokeWidth="2" />
         <line x1="115" y1="250" x2="140" y2="250" stroke="rgba(150,150,150,0.4)" strokeWidth="2" />
         
-        {/* Too loud indicator */}
-        {isTooLoud && (
-          <>
-            <circle cx="170" cy="50" r="15" fill="#EF4444" className="animate-pulse" />
-            <text x="170" y="55" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold">!</text>
-          </>
-        )}
+
       </svg>
       
       {/* 4 Colored dots below the glass - positioned below the SVG */}

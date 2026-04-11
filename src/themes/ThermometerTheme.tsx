@@ -163,19 +163,25 @@ export const ThermometerTheme: React.FC<NewThemeProps> = ({ level }) => {
           </svg>
         </div>
 
-        {/* Level indicator text */}
-        <div className="absolute -right-16 top-1/2 -translate-y-1/2">
-          <div className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-300 ${
-            level === 'quiet' ? 'bg-blue-200 text-blue-800' :
-            level === 'moderate' ? 'bg-green-200 text-green-800' :
-            level === 'loud' ? 'bg-orange-200 text-orange-800' :
-            'bg-red-200 text-red-800 animate-pulse'
-          }`}>
-            {level === 'quiet' && '❄️ Cool'}
-            {level === 'moderate' && '✓ Good'}
-            {level === 'loud' && '🔥 Hot!'}
-            {level === 'tooLoud' && '💥 TOO HOT!'}
-          </div>
+        {/* 4 Colored dots indicator - BELOW the thermometer */}
+        <div className="flex items-center justify-center gap-3 mt-6">
+          {[0, 1, 2, 3].map((dotIndex) => {
+            const levelIndex = level === 'quiet' ? 0 : level === 'moderate' ? 1 : level === 'loud' ? 2 : 3;
+            const dotColors = ['#3B82F6', '#22C55E', '#F97316', '#EF4444']; // Blue, Green, Orange, Red
+            const isActive = dotIndex <= levelIndex;
+            return (
+              <div
+                key={dotIndex}
+                className={`w-4 h-4 rounded-full transition-all duration-300 ${
+                  isActive ? 'scale-100 opacity-100' : 'scale-75 opacity-30'
+                }`}
+                style={{
+                  backgroundColor: dotColors[dotIndex],
+                  boxShadow: isActive ? `0 0 8px ${dotColors[dotIndex]}` : 'none'
+                }}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

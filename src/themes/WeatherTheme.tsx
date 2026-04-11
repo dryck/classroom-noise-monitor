@@ -244,20 +244,7 @@ export const WeatherTheme: React.FC<NewThemeProps> = ({ level }) => {
         </svg>
       </div>
 
-      {/* Status indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-        <div className={`px-6 py-3 rounded-2xl font-bold text-lg shadow-lg transition-all duration-300 ${
-          level === 'quiet' ? 'bg-yellow-400 text-yellow-900' :
-          level === 'moderate' ? 'bg-blue-300 text-blue-900' :
-          level === 'loud' ? 'bg-gray-400 text-gray-900' :
-          'bg-purple-600 text-white animate-pulse'
-        }`}>
-          {level === 'quiet' && '☀️ Perfect Day!'}
-          {level === 'moderate' && '⛅ Nice Breeze'}
-          {level === 'loud' && '🌧️ Storm Coming!'}
-          {level === 'tooLoud' && '⛈️ THUNDERSTORM!'}
-        </div>
-      </div>
+
 
       {/* Wind lines for moderate+ */}
       {level !== 'quiet' && (
@@ -282,6 +269,29 @@ export const WeatherTheme: React.FC<NewThemeProps> = ({ level }) => {
           `}</style>
         </div>
       )}
+
+      {/* 4 Colored dots indicator - at bottom */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+        <div className="flex items-center gap-3 px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
+          {[0, 1, 2, 3].map((dotIndex) => {
+            const levelIndex = level === 'quiet' ? 0 : level === 'moderate' ? 1 : level === 'loud' ? 2 : 3;
+            const dotColors = ['#10B981', '#F59E0B', '#F97316', '#EF4444']; // Green, Yellow, Orange, Red
+            const isActive = dotIndex <= levelIndex;
+            return (
+              <div
+                key={dotIndex}
+                className={`w-4 h-4 rounded-full transition-all duration-300 ${
+                  isActive ? 'scale-100 opacity-100' : 'scale-75 opacity-30'
+                }`}
+                style={{
+                  backgroundColor: dotColors[dotIndex],
+                  boxShadow: isActive ? `0 0 8px ${dotColors[dotIndex]}` : 'none'
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
