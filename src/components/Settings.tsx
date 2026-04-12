@@ -12,7 +12,7 @@ interface SettingsProps {
 
 type SettingsTab = 'themes' | 'thresholds'
 
-export function Settings({ currentTheme, customImages, onThemeChange, onClose }: SettingsProps) {
+export function SettingsPanel({ currentTheme, customImages, onThemeChange, onClose }: SettingsProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('themes')
   const { thresholds, errors, updateThreshold, resetToWHO, isUsingWHODefaults } = useSettings()
 

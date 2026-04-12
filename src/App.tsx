@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { NoiseMonitor } from './components/NoiseMonitor'
-import { Settings } from './components/Settings'
+import { SettingsPanel as Settings } from './components/Settings'
 import { Theme, Sound, CustomImage } from './types'
 
 const STORAGE_KEY = 'quiet-in-class-settings'
