@@ -258,10 +258,6 @@ export function NoiseMonitor({
           <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg">
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${isTooLoud ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`} />
-              <span className="font-semibold text-gray-700">
-                {Math.round(noiseLevel)} dB
-              </span>
-              <span className="text-gray-400">|</span>
               <span className={`font-medium ${isTooLoud ? 'text-red-600' : 'text-green-600'}`}>
                 {isTooLoud ? 'Too Loud!' : 'Quiet'}
               </span>
