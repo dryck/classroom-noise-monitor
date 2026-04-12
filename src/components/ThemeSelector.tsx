@@ -177,8 +177,10 @@ export function ThemeSelector({ currentTheme, customImages, onThemeChange }: The
               </div>
             </div>
             
-            {/* Theme Preview Gallery - shows all 4 noise levels */}
-            <ThemePreviewGallery theme={theme.id} customImages={customImages} />
+            {/* Theme Preview Gallery - shows all 4 noise levels (hidden on mobile) */}
+            <div className="hidden sm:block">
+              <ThemePreviewGallery theme={theme.id} customImages={customImages} />
+            </div>
           </button>
         ))}
       </div>
