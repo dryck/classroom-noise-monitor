@@ -58,6 +58,8 @@ export function NoiseMonitor({
   const wasTooLoudRef = useRef(false)
   const upDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const downDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingUpRef = useRef(false)
+  const pendingDownRef = useRef(false)
   
   const { triggerAlerts, stopAlerts } = useAudio(selectedSound, customSounds, isMuted, soundSettings)
 
@@ -104,6 +106,8 @@ export function NoiseMonitor({
     setIsTooLoud(false)
     if (upDelayTimerRef.current) clearTimeout(upDelayTimerRef.current)
     if (downDelayTimerRef.current) clearTimeout(downDelayTimerRef.current)
+    pendingUpRef.current = false
+    pendingDownRef.current = false
     stopAlerts()
     stopTTS()
   }, [stopAlerts, stopTTS])
@@ -127,31 +131,45 @@ export function NoiseMonitor({
 
       // Delay logic for display level changes
       if (level > displayLevel) {
-        // Level increasing - apply upDelay
-        if (upDelayTimerRef.current) clearTimeout(upDelayTimerRef.current)
-        upDelayTimerRef.current = setTimeout(() => {
-          setDisplayLevel(level)
-          setIsTooLoud(level > threshold)
-          if (newLevelNumber >= 4 && currentLevelNumber < 4) {
-            triggerAlerts()
-            triggerTTS()
-          }
-          wasTooLoudRef.current = level > threshold
-        }, _upDelay * 1000)
-      } else if (level < displayLevel) {
-        // Level decreasing - apply downDelay
+        // Level increasing - apply upDelay (only start timer once)
+        if (!pendingUpRef.current) {
+          pendingUpRef.current = true
+          upDelayTimerRef.current = setTimeout(() => {
+            setDisplayLevel(level)
+            setIsTooLoud(level > threshold)
+            if (getNoiseLevelNumber(level, threshold) >= 4 && getNoiseLevelNumber(displayLevel, threshold) < 4) {
+              triggerAlerts()
+              triggerTTS()
+            }
+            wasTooLoudRef.current = level > threshold
+            pendingUpRef.current = false
+          }, _upDelay * 1000)
+        }
+        // Cancel any pending down delay
         if (downDelayTimerRef.current) clearTimeout(downDelayTimerRef.current)
-        downDelayTimerRef.current = setTimeout(() => {
-          setDisplayLevel(level)
-          setIsTooLoud(level > threshold)
-          wasTooLoudRef.current = level > threshold
-          if (newLevelNumber < 4) {
-            stopAlerts()
-            stopTTS()
-          }
-        }, _downDelay * 1000)
+        pendingDownRef.current = false
+      } else if (level < displayLevel) {
+        // Level decreasing - apply downDelay (only start timer once)
+        if (!pendingDownRef.current) {
+          pendingDownRef.current = true
+          downDelayTimerRef.current = setTimeout(() => {
+            setDisplayLevel(level)
+            setIsTooLoud(level > threshold)
+            wasTooLoudRef.current = level > threshold
+            if (getNoiseLevelNumber(level, threshold) < 4) {
+              stopAlerts()
+              stopTTS()
+            }
+            pendingDownRef.current = false
+          }, _downDelay * 1000)
+        }
+        // Cancel any pending up delay
+        if (upDelayTimerRef.current) clearTimeout(upDelayTimerRef.current)
+        pendingUpRef.current = false
       } else {
-        // Same level - update immediately
+        // Same level - clear pending flags, update immediately
+        pendingUpRef.current = false
+        pendingDownRef.current = false
         setDisplayLevel(level)
         setIsTooLoud(tooLoud)
         if (newLevelNumber >= 4 && currentLevelNumber < 4) {
