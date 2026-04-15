@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Theme, Sound, CustomImage } from '../types'
+import { Theme, Sound, CustomImage, SoundSettings } from '../types'
 import { EggTheme } from '../themes/EggTheme'
 import { EggClassicTheme } from '../themes/EggClassicTheme'
 import { GlassTheme } from '../themes/GlassTheme'
@@ -9,7 +9,8 @@ import { BatteryTheme } from '../themes/BatteryTheme'
 import { WeatherTheme } from '../themes/WeatherTheme'
 import { VolcanoTheme } from '../themes/VolcanoTheme'
 import { useAudio } from '../hooks/useAudio'
-import { calculateNoiseLevel } from '../utils/noiseCalculator'
+import { useTTS, TTSConfig } from '../hooks/useTTS'
+import { calculateNoiseLevel, getNoiseLevelNumber } from '../utils/noiseCalculator'
 
 interface NoiseMonitorProps {
   theme: Theme
@@ -21,6 +22,7 @@ interface NoiseMonitorProps {
   backgroundColor?: string
   upDelay?: number
   downDelay?: number
+  soundSettings?: SoundSettings
   onSettingsClick: () => void
   onFullscreenClick: () => void
   onMuteClick: () => void
@@ -37,6 +39,7 @@ export function NoiseMonitor({
   backgroundColor = 'dark',
   upDelay: _upDelay = 2,
   downDelay: _downDelay = 4,
+  soundSettings,
   onSettingsClick,
   onFullscreenClick,
   onMuteClick,
@@ -56,7 +59,15 @@ export function NoiseMonitor({
   const upDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const downDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   
-  const { playAlarm } = useAudio(selectedSound, customSounds, isMuted)
+  const { triggerAlerts, stopAlerts } = useAudio(selectedSound, customSounds, isMuted, soundSettings)
+
+  const ttsConfig: TTSConfig = {
+    text: soundSettings?.ttsText || 'Please be quiet!',
+    mode: soundSettings?.ttsMode || 'oneShot',
+    apiKey: soundSettings?.ttsApiKey,
+    voiceId: soundSettings?.ttsVoiceId || 'Xb7hH8MSUJpSbSDYk0k2',
+  }
+  const { triggerTTS, stopTTS } = useTTS(ttsConfig, isMuted)
 
   const startListening = useCallback(async () => {
     try {
@@ -93,64 +104,78 @@ export function NoiseMonitor({
     setIsTooLoud(false)
     if (upDelayTimerRef.current) clearTimeout(upDelayTimerRef.current)
     if (downDelayTimerRef.current) clearTimeout(downDelayTimerRef.current)
-  }, [])
+    stopAlerts()
+    stopTTS()
+  }, [stopAlerts, stopTTS])
 
   useEffect(() => {
     if (!isListening || !analyserRef.current) return
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
-    
+
     const updateNoiseLevel = () => {
       if (!analyserRef.current) return
-      
+
       analyserRef.current.getByteFrequencyData(dataArray)
       const level = calculateNoiseLevel(dataArray)
       const tooLoud = level > threshold
-      
+
       setNoiseLevel(level)
-      
+
+      const currentLevelNumber = getNoiseLevelNumber(displayLevel, threshold)
+      const newLevelNumber = getNoiseLevelNumber(level, threshold)
+
       // Delay logic for display level changes
-      const currentDisplay = displayLevel
-      if (level > currentDisplay) {
+      if (level > displayLevel) {
         // Level increasing - apply upDelay
         if (upDelayTimerRef.current) clearTimeout(upDelayTimerRef.current)
         upDelayTimerRef.current = setTimeout(() => {
           setDisplayLevel(level)
           setIsTooLoud(level > threshold)
-          if (level > threshold && !wasTooLoudRef.current) {
-            playAlarm()
+          if (newLevelNumber >= 4 && currentLevelNumber < 4) {
+            triggerAlerts()
+            triggerTTS()
           }
           wasTooLoudRef.current = level > threshold
         }, _upDelay * 1000)
-      } else if (level < currentDisplay) {
+      } else if (level < displayLevel) {
         // Level decreasing - apply downDelay
         if (downDelayTimerRef.current) clearTimeout(downDelayTimerRef.current)
         downDelayTimerRef.current = setTimeout(() => {
           setDisplayLevel(level)
           setIsTooLoud(level > threshold)
           wasTooLoudRef.current = level > threshold
+          if (newLevelNumber < 4) {
+            stopAlerts()
+            stopTTS()
+          }
         }, _downDelay * 1000)
       } else {
         // Same level - update immediately
         setDisplayLevel(level)
         setIsTooLoud(tooLoud)
-        if (tooLoud && !wasTooLoudRef.current) {
-          playAlarm()
+        if (newLevelNumber >= 4 && currentLevelNumber < 4) {
+          triggerAlerts()
+          triggerTTS()
         }
         wasTooLoudRef.current = tooLoud
+        if (newLevelNumber < 4) {
+          stopAlerts()
+          stopTTS()
+        }
       }
-      
+
       animationFrameRef.current = requestAnimationFrame(updateNoiseLevel)
     }
-    
+
     updateNoiseLevel()
-    
+
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [isListening, threshold, playAlarm])
+  }, [isListening, threshold, displayLevel, _upDelay, _downDelay, triggerAlerts, triggerTTS, stopAlerts, stopTTS])
 
   useEffect(() => {
     return () => {

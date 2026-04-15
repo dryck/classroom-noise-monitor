@@ -3,7 +3,6 @@ import { ThemeProps } from '../types'
 export function EggTheme({ noiseLevel, threshold, isTooLoud, backgroundColor: _bg }: ThemeProps) {
   // Calculate animation intensity based on noise level
   const intensity = Math.min(noiseLevel / threshold, 1.5)
-  const shakeAmount = isTooLoud ? intensity * 8 : 0
   const scale = 1 + (intensity * 0.1)
   
   // Calculate level (1-4)
@@ -22,11 +21,9 @@ export function EggTheme({ noiseLevel, threshold, isTooLoud, backgroundColor: _b
     <div className="flex flex-col items-center justify-center gap-4">
       {/* Egg container */}
       <div
-        className="transition-transform duration-100"
+        className={`transition-transform duration-100 ${isTooLoud ? 'animate-shake' : ''}`}
         style={{
-          transform: isTooLoud 
-            ? `translate(${Math.random() * shakeAmount - shakeAmount/2}px, ${Math.random() * shakeAmount - shakeAmount/2}px) scale(${scale})`
-            : `scale(${scale})`,
+          transform: `scale(${scale})`,
         }}
       >
         <svg

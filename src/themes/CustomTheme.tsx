@@ -16,9 +16,7 @@ export function CustomTheme({ noiseLevel, threshold, isTooLoud, customImages }: 
   const currentImage = imageIndex >= 0 ? customImages[imageIndex] : null
   
   // Animation intensity
-  const intensity = Math.min(noiseLevel / threshold, 1.5)
   const scale = 1 + (isTooLoud ? 0.05 : 0)
-  const shakeAmount = isTooLoud ? intensity * 5 : 0
 
   // Calculate which dots should be active based on noise level ratio
   const ratio = noiseLevel / threshold
@@ -58,11 +56,9 @@ export function CustomTheme({ noiseLevel, threshold, isTooLoud, customImages }: 
     <div className="flex flex-col items-center justify-center w-full max-w-[375px] mx-auto px-4">
       {/* Image container with effects */}
       <div
-        className="relative transition-transform duration-100 w-full"
+        className={`relative transition-transform duration-100 w-full ${isTooLoud ? 'animate-shake' : ''}`}
         style={{
-          transform: isTooLoud
-            ? `translate(${Math.random() * shakeAmount - shakeAmount/2}px, ${Math.random() * shakeAmount - shakeAmount/2}px) scale(${scale})`
-            : `scale(${scale})`,
+          transform: `scale(${scale})`,
         }}
       >
         {/* Main image - responsive sizing for mobile */}

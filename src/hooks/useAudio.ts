@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect, useState } from 'react'
-import { Sound } from '../types'
+import { Sound, SoundSettings } from '../types'
 import { generateBellSound, generateChimeSound, generateBuzzSound } from '../utils/soundGenerator'
 
 const builtInSounds: Sound[] = [
@@ -8,10 +8,17 @@ const builtInSounds: Sound[] = [
   { id: 'buzz', name: 'Alert Buzz', url: '', isBuiltIn: true },
 ]
 
-export function useAudio(selectedSoundId: string, customSounds: Sound[], isMuted: boolean) {
+export function useAudio(
+  selectedSoundId: string,
+  customSounds: Sound[],
+  isMuted: boolean,
+  soundSettings?: SoundSettings
+) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const currentSoundUrlRef = useRef<string | null>(null)
   const [generatedUrls, setGeneratedUrls] = useState<Record<string, string>>({})
+  const alarmHasPlayedRef = useRef(false)
+  const repeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Generate sounds on first use
   useEffect(() => {
@@ -29,16 +36,30 @@ export function useAudio(selectedSoundId: string, customSounds: Sound[], isMuted
     generateSounds()
   }, [])
 
+  // Reset one-shot flags when conditions change
+  useEffect(() => {
+    alarmHasPlayedRef.current = false
+    if (repeatIntervalRef.current) {
+      clearInterval(repeatIntervalRef.current)
+      repeatIntervalRef.current = null
+    }
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+  }, [isMuted, selectedSoundId, soundSettings?.selectedAlarmSound, soundSettings?.alarmMode])
+
   // Find the selected sound
   const getSelectedSound = useCallback((): Sound | undefined => {
     const allSounds = [...builtInSounds, ...customSounds]
-    const sound = allSounds.find(s => s.id === selectedSoundId) || builtInSounds[0]
+    const effectiveId = soundSettings?.selectedAlarmSound || selectedSoundId
+    const sound = allSounds.find(s => s.id === effectiveId) || builtInSounds[0]
     // Replace empty URL with generated URL for built-in sounds
     if (sound.isBuiltIn && generatedUrls[sound.id]) {
       return { ...sound, url: generatedUrls[sound.id] }
     }
     return sound
-  }, [selectedSoundId, customSounds, generatedUrls])
+  }, [selectedSoundId, customSounds, generatedUrls, soundSettings?.selectedAlarmSound])
 
   // Play alarm sound
   const playAlarm = useCallback(() => {
@@ -72,15 +93,52 @@ export function useAudio(selectedSoundId: string, customSounds: Sound[], isMuted
     }
   }, [getSelectedSound, isMuted])
 
+  const triggerAlerts = useCallback(() => {
+    if (isMuted) return
+
+    const alarmMode = soundSettings?.alarmMode || 'oneShot'
+
+    // Alarm only
+    if (alarmMode === 'oneShot') {
+      if (!alarmHasPlayedRef.current) {
+        playAlarm()
+        alarmHasPlayedRef.current = true
+      }
+    } else {
+      // Repeat mode: play immediately and every 3 seconds
+      if (!repeatIntervalRef.current) {
+        playAlarm()
+        repeatIntervalRef.current = setInterval(() => {
+          if (!isMuted) {
+            playAlarm()
+          }
+        }, 3000)
+      }
+    }
+  }, [isMuted, soundSettings?.alarmMode, playAlarm])
+
+  const stopAlerts = useCallback(() => {
+    if (repeatIntervalRef.current) {
+      clearInterval(repeatIntervalRef.current)
+      repeatIntervalRef.current = null
+    }
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+    alarmHasPlayedRef.current = false
+  }, [])
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      stopAlerts()
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current = null
       }
     }
-  }, [])
+  }, [stopAlerts])
 
-  return { playAlarm }
+  return { triggerAlerts, stopAlerts }
 }

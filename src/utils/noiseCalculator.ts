@@ -55,3 +55,14 @@ export function getNoiseStatus(level: number, threshold: number): string {
   if (level > threshold * 0.5) return 'Moderate'
   return 'Quiet'
 }
+
+/**
+ * Get level number (1-4) based on noise level relative to threshold
+ * 1 = Quiet, 2 = Moderate, 3 = Getting Loud, 4 = Too Loud
+ */
+export function getNoiseLevelNumber(level: number, threshold: number): number {
+  if (level > threshold) return 4
+  if (level > threshold * 0.8) return 3
+  if (level > threshold * 0.5) return 2
+  return 1
+}

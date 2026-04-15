@@ -1,5 +1,26 @@
 export type Theme = 'egg' | 'eggClassic' | 'glass' | 'custom' | 'thermometer' | 'battery' | 'weather' | 'volcano'
 
+export type AlarmMode = 'oneShot' | 'repeat'
+export type TTSMode = 'oneShot' | 'repeat'
+
+export interface SoundSettings {
+  selectedAlarmSound: string
+  alarmMode: AlarmMode
+  ttsText: string
+  ttsMode: TTSMode
+  ttsApiKey?: string
+  ttsVoiceId?: string
+}
+
+export const DEFAULT_SOUND_SETTINGS: SoundSettings = {
+  selectedAlarmSound: 'bell',
+  alarmMode: 'oneShot',
+  ttsText: 'Please be quiet!',
+  ttsMode: 'oneShot',
+  ttsApiKey: '',
+  ttsVoiceId: 'Xb7hH8MSUJpSbSDYk0k2',
+}
+
 export interface Sound {
   id: string
   name: string

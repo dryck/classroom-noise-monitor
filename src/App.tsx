@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { NoiseMonitor } from './components/NoiseMonitor'
 import { SettingsPanel as Settings } from './components/Settings'
-import { Theme, Sound, CustomImage } from './types'
+import { Theme, Sound, CustomImage, SoundSettings, DEFAULT_SOUND_SETTINGS } from './types'
 
 const STORAGE_KEY = 'quiet-in-class-settings'
 
@@ -14,6 +14,7 @@ interface AppSettings {
   isMuted: boolean
   upDelay: number
   downDelay: number
+  soundSettings: SoundSettings
 }
 
 const defaultSettings: AppSettings = {
@@ -25,12 +26,21 @@ const defaultSettings: AppSettings = {
   isMuted: false,
   upDelay: 2,
   downDelay: 4,
+  soundSettings: DEFAULT_SOUND_SETTINGS,
 }
 
 function App() {
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
-    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        return { ...defaultSettings, ...parsed }
+      } catch {
+        return defaultSettings
+      }
+    }
+    return defaultSettings
   })
   
   const [showSettings, setShowSettings] = useState(false)
@@ -79,6 +89,7 @@ function App() {
         isMuted={settings.isMuted}
         upDelay={settings.upDelay}
         downDelay={settings.downDelay}
+        soundSettings={settings.soundSettings}
         onSettingsClick={() => setShowSettings(true)}
         onFullscreenClick={toggleFullscreen}
         onMuteClick={handleMuteToggle}
@@ -89,8 +100,10 @@ function App() {
         <Settings
           currentTheme={settings.theme}
           customImages={settings.customImages}
+          soundSettings={settings.soundSettings}
           onThemeChange={(theme) => setSettings(prev => ({ ...prev, theme }))}
           onDelayChange={(key, value) => setSettings(prev => ({ ...prev, [key]: value }))}
+          onSoundSettingsChange={(soundSettings) => setSettings(prev => ({ ...prev, soundSettings }))}
           onClose={() => setShowSettings(false)}
         />
       )}

@@ -1,21 +1,38 @@
-import { useState } from 'react'
-import { Theme, CustomImage, ThresholdConfig } from '../types'
+import { useState, useRef } from 'react'
+import { Theme, CustomImage, ThresholdConfig, SoundSettings } from '../types'
 import { useSettings } from '../hooks/useSettings'
 import { ThemeSelector } from './ThemeSelector'
 
 interface SettingsProps {
   currentTheme: Theme
   customImages: CustomImage[]
+  soundSettings: SoundSettings
   onThemeChange: (theme: Theme) => void
   onDelayChange: (key: 'upDelay' | 'downDelay', value: number) => void
+  onSoundSettingsChange: (settings: SoundSettings) => void
   onClose: () => void
 }
 
-type SettingsTab = 'themes' | 'thresholds'
+type SettingsTab = 'themes' | 'thresholds' | 'sounds'
 
-export function SettingsPanel({ currentTheme, customImages, onThemeChange, onDelayChange, onClose }: SettingsProps) {
+const BUILT_IN_SOUNDS = [
+  { id: 'bell', name: 'School Bell' },
+  { id: 'chime', name: 'Gentle Chime' },
+  { id: 'buzz', name: 'Alert Buzz' },
+]
+
+export function SettingsPanel({
+  currentTheme,
+  customImages,
+  soundSettings,
+  onThemeChange,
+  onDelayChange,
+  onSoundSettingsChange,
+  onClose,
+}: SettingsProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('themes')
   const { thresholds, delays, errors, updateThreshold, updateDelay, resetToWHO, isUsingWHODefaults } = useSettings()
+  const ttsRef = useRef<SpeechSynthesisUtterance | null>(null)
 
   const thresholdLabels: Record<keyof ThresholdConfig, string> = {
     quietToModerate: 'Quiet → Moderate',
@@ -29,6 +46,74 @@ export function SettingsPanel({ currentTheme, customImages, onThemeChange, onDel
     moderateToLoud: 'Acceptable level (40-55 dB)',
     loudToTooLoud: 'Disruptive to learning (55-70 dB)',
     alarmTrigger: 'Harmful, immediate action needed (>70 dB)'
+  }
+
+  const playTestAlarm = () => {
+    const sound = BUILT_IN_SOUNDS.find((s) => s.id === soundSettings.selectedAlarmSound)
+    if (!sound) return
+    // Use the same generator as the app via a quick Audio beep for test
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const osc = audioCtx.createOscillator()
+    const gain = audioCtx.createGain()
+    if (sound.id === 'bell') {
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime)
+    } else if (sound.id === 'chime') {
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime)
+    } else {
+      osc.type = 'sawtooth'
+      osc.frequency.setValueAtTime(220, audioCtx.currentTime)
+    }
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5)
+    osc.connect(gain)
+    gain.connect(audioCtx.destination)
+    osc.start()
+    osc.stop(audioCtx.currentTime + 0.5)
+  }
+
+  const playTestTTS = async () => {
+    const text = soundSettings.ttsText || 'Please be quiet!'
+    if (soundSettings.ttsApiKey && soundSettings.ttsVoiceId) {
+      try {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${soundSettings.ttsVoiceId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': soundSettings.ttsApiKey,
+          },
+          body: JSON.stringify({
+            text,
+            model_id: 'eleven_monolingual_v1',
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+          }),
+        })
+        if (!response.ok) throw new Error('ElevenLabs API error')
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const audio = new Audio(url)
+        await audio.play()
+        audio.onended = () => URL.revokeObjectURL(url)
+        return
+      } catch (err) {
+        console.warn('ElevenLabs test failed, falling back to browser TTS:', err)
+      }
+    }
+    if (!window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.rate = 1
+    utterance.pitch = 1
+    const voices = window.speechSynthesis.getVoices()
+    const usVoice = voices.find((v) => v.lang === 'en-US')
+    if (usVoice) utterance.voice = usVoice
+    ttsRef.current = utterance
+    window.speechSynthesis.speak(utterance)
+  }
+
+  const updateSound = <K extends keyof SoundSettings>(key: K, value: SoundSettings[K]) => {
+    onSoundSettingsChange({ ...soundSettings, [key]: value })
   }
 
   return (
@@ -45,10 +130,10 @@ export function SettingsPanel({ currentTheme, customImages, onThemeChange, onDel
         </div>
 
         {/* Tabs - fixed */}
-        <div className="flex gap-2 p-4 bg-gray-100 flex-shrink-0">
+        <div className="flex gap-2 p-4 bg-gray-100 flex-shrink-0 overflow-x-auto">
           <button
             onClick={() => setActiveTab('themes')}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+            className={`flex-1 min-w-[80px] py-2 px-3 rounded-lg font-medium transition-colors text-sm sm:text-base ${
               activeTab === 'themes'
                 ? 'bg-white text-tisa-purple shadow-sm'
                 : 'text-gray-600 hover:text-gray-800'
@@ -58,13 +143,23 @@ export function SettingsPanel({ currentTheme, customImages, onThemeChange, onDel
           </button>
           <button
             onClick={() => setActiveTab('thresholds')}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+            className={`flex-1 min-w-[80px] py-2 px-3 rounded-lg font-medium transition-colors text-sm sm:text-base ${
               activeTab === 'thresholds'
                 ? 'bg-white text-tisa-purple shadow-sm'
                 : 'text-gray-600 hover:text-gray-800'
             }`}
           >
             Thresholds
+          </button>
+          <button
+            onClick={() => setActiveTab('sounds')}
+            className={`flex-1 min-w-[80px] py-2 px-3 rounded-lg font-medium transition-colors text-sm sm:text-base ${
+              activeTab === 'sounds'
+                ? 'bg-white text-tisa-purple shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Sounds
           </button>
         </div>
 
@@ -208,6 +303,135 @@ export function SettingsPanel({ currentTheme, customImages, onThemeChange, onDel
                   {isUsingWHODefaults ? 'Using WHO Recommendations ✓' : 'Reset to WHO Recommendations'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'sounds' && (
+            <div className="space-y-8 pb-4">
+              {/* Alarm Section */}
+              <section className="space-y-4">
+                <h3 className="font-semibold text-gray-800">Alarm Sound</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {BUILT_IN_SOUNDS.map((sound) => (
+                    <button
+                      key={sound.id}
+                      onClick={() => updateSound('selectedAlarmSound', sound.id)}
+                      className={`py-3 px-4 rounded-xl border-2 font-medium transition-colors text-sm ${
+                        soundSettings.selectedAlarmSound === sound.id
+                          ? 'border-tisa-purple bg-tisa-purple/10 text-tisa-purple'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      {sound.name}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4">
+                  <span className="text-sm font-medium text-gray-700">Alarm Mode</span>
+                  <div className="flex-1 flex bg-white rounded-lg border p-1">
+                    <button
+                      onClick={() => updateSound('alarmMode', 'oneShot')}
+                      className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
+                        soundSettings.alarmMode === 'oneShot'
+                          ? 'bg-tisa-purple text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      One-shot
+                    </button>
+                    <button
+                      onClick={() => updateSound('alarmMode', 'repeat')}
+                      className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
+                        soundSettings.alarmMode === 'repeat'
+                          ? 'bg-tisa-purple text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      Repeat
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={playTestAlarm}
+                  className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Test Alarm
+                </button>
+              </section>
+
+              {/* TTS Section */}
+              <section className="space-y-4 pt-6 border-t">
+                <h3 className="font-semibold text-gray-800">Text-to-Speech Message</h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                  <input
+                    type="text"
+                    value={soundSettings.ttsText}
+                    onChange={(e) => updateSound('ttsText', e.target.value)}
+                    placeholder="Please be quiet!"
+                    className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-tisa-purple/50"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    This message will be spoken when the noise level reaches Level 4 (Too Loud).
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">ElevenLabs API Key (optional)</label>
+                  <input
+                    type="password"
+                    value={soundSettings.ttsApiKey || ''}
+                    onChange={(e) => updateSound('ttsApiKey', e.target.value)}
+                    placeholder="sk_..."
+                    className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-tisa-purple/50"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Leave empty to use browser SpeechSynthesis as fallback.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4">
+                  <span className="text-sm font-medium text-gray-700">TTS Mode</span>
+                  <div className="flex-1 flex bg-white rounded-lg border p-1">
+                    <button
+                      onClick={() => updateSound('ttsMode', 'oneShot')}
+                      className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
+                        soundSettings.ttsMode === 'oneShot'
+                          ? 'bg-tisa-purple text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      One-shot
+                    </button>
+                    <button
+                      onClick={() => updateSound('ttsMode', 'repeat')}
+                      className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
+                        soundSettings.ttsMode === 'repeat'
+                          ? 'bg-tisa-purple text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      Repeat every 5s
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={playTestTTS}
+                  className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                  Test TTS
+                </button>
+              </section>
             </div>
           )}
         </div>

@@ -38,14 +38,14 @@ export const VolcanoTheme: React.FC<NewThemeProps> = ({ level }) => {
       {/* Stars (visible in quiet) */}
       {level === 'quiet' && (
         <div className="absolute inset-0 pointer-events-none">
-          {[...Array(15)].map((_, i) => (
+          {[12,45,23,67,89,34,56,78,12,90,45,67,23,89,56].map((left, i) => (
             <div
               key={i}
               className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
               style={{
-                left: `${10 + Math.random() * 80}%`,
-                top: `${5 + Math.random() * 40}%`,
-                animationDelay: `${Math.random() * 2}s`
+                left: `${left}%`,
+                top: `${[8,15,22,10,30,18,25,12,35,20,28,14,32,16,24][i]}%`,
+                animationDelay: `${[0,0.3,0.6,0.9,1.2,0.4,0.8,1.1,0.2,0.5,0.7,1.0,0.1,0.35,0.65][i]}s`
               }}
             />
           ))}
@@ -161,30 +161,30 @@ export const VolcanoTheme: React.FC<NewThemeProps> = ({ level }) => {
             {/* Eruption particles - tooLoud only */}
             {level === 'tooLoud' && (
               <>
-                {[...Array(10)].map((_, i) => (
+                {[140,160,130,170,145,155,125,165,135,175].map((cx, i) => (
                   <circle 
                     key={i}
-                    cx={150 + (Math.random() - 0.5) * 60}
+                    cx={cx}
                     cy={80}
-                    r={3 + Math.random() * 5}
-                    fill={Math.random() > 0.5 ? '#EF4444' : '#FCD34D'}
+                    r={[4,5,3,6,4,5,3,4,5,6][i]}
+                    fill={['#EF4444','#FCD34D','#EF4444','#EF4444','#FCD34D','#EF4444','#FCD34D','#EF4444','#FCD34D','#EF4444'][i]}
                   >
                     <animate 
                       attributeName="cy" 
                       values="80;20;-20" 
-                      dur={`${0.8 + Math.random() * 0.5}s`}
+                      dur={`${[1.0,0.9,1.1,0.8,1.2,1.0,0.9,1.1,0.8,1.0][i]}s`}
                       repeatCount="indefinite"
                     />
                     <animate 
                       attributeName="cx" 
-                      values={`${150 + (Math.random() - 0.5) * 20};${150 + (Math.random() - 0.5) * 100}`}
-                      dur={`${0.8 + Math.random() * 0.5}s`}
+                      values={`${cx};${[110,190,100,200,120,180,90,210,115,185][i]}`}
+                      dur={`${[1.0,0.9,1.1,0.8,1.2,1.0,0.9,1.1,0.8,1.0][i]}s`}
                       repeatCount="indefinite"
                     />
                     <animate 
                       attributeName="opacity" 
                       values="1;1;0" 
-                      dur={`${0.8 + Math.random() * 0.5}s`}
+                      dur={`${[1.0,0.9,1.1,0.8,1.2,1.0,0.9,1.1,0.8,1.0][i]}s`}
                       repeatCount="indefinite"
                     />
                   </circle>
