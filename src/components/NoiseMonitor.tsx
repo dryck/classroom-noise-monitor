@@ -27,6 +27,7 @@ interface NoiseMonitorProps {
   onFullscreenClick: () => void
   onMuteClick: () => void
   isFullscreen: boolean
+  onNoiseLevelChange?: (level: number) => void
 }
 
 export function NoiseMonitor({
@@ -44,10 +45,9 @@ export function NoiseMonitor({
   onFullscreenClick,
   onMuteClick,
   isFullscreen,
+  onNoiseLevelChange,
 }: NoiseMonitorProps) {
-  const [noiseLevel, setNoiseLevel] = useState(0)
   const [displayLevel, setDisplayLevel] = useState(0)
-  void noiseLevel // Used for external reference, displayLevel is primary
   const [isTooLoud, setIsTooLoud] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -101,7 +101,6 @@ export function NoiseMonitor({
       audioContextRef.current.close()
     }
     setIsListening(false)
-    setNoiseLevel(0)
     setDisplayLevel(0)
     setIsTooLoud(false)
     if (upDelayTimerRef.current) clearTimeout(upDelayTimerRef.current)
@@ -124,7 +123,7 @@ export function NoiseMonitor({
       const level = calculateNoiseLevel(dataArray)
       const tooLoud = level > threshold
 
-      setNoiseLevel(level)
+      onNoiseLevelChange?.(level)
 
       const currentLevelNumber = getNoiseLevelNumber(displayLevel, threshold)
       const newLevelNumber = getNoiseLevelNumber(level, threshold)

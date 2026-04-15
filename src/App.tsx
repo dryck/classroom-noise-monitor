@@ -45,6 +45,7 @@ function App() {
   
   const [showSettings, setShowSettings] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [noiseLevel, setNoiseLevel] = useState(0)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
@@ -94,6 +95,7 @@ function App() {
         onFullscreenClick={toggleFullscreen}
         onMuteClick={handleMuteToggle}
         isFullscreen={isFullscreen}
+        onNoiseLevelChange={setNoiseLevel}
       />
       
       {showSettings && (
@@ -101,6 +103,7 @@ function App() {
           currentTheme={settings.theme}
           customImages={settings.customImages}
           soundSettings={settings.soundSettings}
+          noiseLevel={noiseLevel}
           onThemeChange={(theme) => setSettings(prev => ({ ...prev, theme }))}
           onDelayChange={(key, value) => setSettings(prev => ({ ...prev, [key]: value }))}
           onSoundSettingsChange={(soundSettings) => setSettings(prev => ({ ...prev, soundSettings }))}

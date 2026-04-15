@@ -7,6 +7,7 @@ interface SettingsProps {
   currentTheme: Theme
   customImages: CustomImage[]
   soundSettings: SoundSettings
+  noiseLevel?: number
   onThemeChange: (theme: Theme) => void
   onDelayChange: (key: 'upDelay' | 'downDelay', value: number) => void
   onSoundSettingsChange: (settings: SoundSettings) => void
@@ -25,6 +26,7 @@ export function SettingsPanel({
   currentTheme,
   customImages,
   soundSettings,
+  noiseLevel = 0,
   onThemeChange,
   onDelayChange,
   onSoundSettingsChange,
@@ -116,6 +118,59 @@ export function SettingsPanel({
     onSoundSettingsChange({ ...soundSettings, [key]: value })
   }
 
+  const LiveNoiseBar = () => {
+    const pct = Math.min(Math.max(noiseLevel, 0), 100)
+    const markerPositions = {
+      lv2: Math.min(Math.max(thresholds.quietToModerate, 0), 100),
+      lv3: Math.min(Math.max(thresholds.moderateToLoud, 0), 100),
+      lv4: Math.min(Math.max(thresholds.loudToTooLoud, 0), 100),
+    }
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+        <div className="flex justify-between items-end mb-2">
+          <span className="text-sm font-semibold text-gray-700">Live Noise Level</span>
+          <span className="text-sm font-medium text-gray-900">{pct.toFixed(1)}% <span className="text-gray-500">({noiseLevel.toFixed(1)} dB)</span></span>
+        </div>
+        <div className="relative h-4 rounded-full overflow-hidden bg-gray-200">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full"
+            style={{
+              width: `${pct}%`,
+              background: 'linear-gradient(90deg, #22c55e 0%, #eab308 45%, #f97316 75%, #ef4444 100%)',
+              transition: 'width 100ms linear',
+            }}
+          />
+          {/* Markers */}
+          <div
+            className="absolute top-0 bottom-0 w-0.5 bg-gray-800"
+            style={{ left: `${markerPositions.lv2}%` }}
+            title="Lv.2"
+          >
+            <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-700">2</span>
+          </div>
+          <div
+            className="absolute top-0 bottom-0 w-0.5 bg-gray-800"
+            style={{ left: `${markerPositions.lv3}%` }}
+            title="Lv.3"
+          >
+            <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-700">3</span>
+          </div>
+          <div
+            className="absolute top-0 bottom-0 w-0.5 bg-gray-800"
+            style={{ left: `${markerPositions.lv4}%` }}
+            title="Lv.4"
+          >
+            <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-700">4</span>
+          </div>
+        </div>
+        <div className="flex justify-between mt-1 text-[10px] text-gray-500">
+          <span>0 dB</span>
+          <span>100 dB</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-lg h-[85vh] flex flex-col">
@@ -175,7 +230,9 @@ export function SettingsPanel({
 
           {activeTab === 'thresholds' && (
             <div className="space-y-6 pb-4">
-              {/* WHO Info Box */}
+              <LiveNoiseBar />
+
+              {/* WHO Info Box */} 
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <h3 className="font-semibold text-blue-900 mb-2">WHO Guidelines for Classrooms</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
