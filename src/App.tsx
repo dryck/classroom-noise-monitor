@@ -12,6 +12,8 @@ interface AppSettings {
   customSounds: Sound[]
   customImages: CustomImage[]
   isMuted: boolean
+  upDelay: number
+  downDelay: number
 }
 
 const defaultSettings: AppSettings = {
@@ -21,6 +23,8 @@ const defaultSettings: AppSettings = {
   customSounds: [],
   customImages: [],
   isMuted: false,
+  upDelay: 2,
+  downDelay: 4,
 }
 
 function App() {
@@ -73,6 +77,8 @@ function App() {
         customSounds={settings.customSounds}
         customImages={settings.customImages}
         isMuted={settings.isMuted}
+        upDelay={settings.upDelay}
+        downDelay={settings.downDelay}
         onSettingsClick={() => setShowSettings(true)}
         onFullscreenClick={toggleFullscreen}
         onMuteClick={handleMuteToggle}
@@ -84,6 +90,7 @@ function App() {
           currentTheme={settings.theme}
           customImages={settings.customImages}
           onThemeChange={(theme) => setSettings(prev => ({ ...prev, theme }))}
+          onDelayChange={(key, value) => setSettings(prev => ({ ...prev, [key]: value }))}
           onClose={() => setShowSettings(false)}
         />
       )}

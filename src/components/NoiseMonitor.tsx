@@ -43,6 +43,8 @@ export function NoiseMonitor({
   isFullscreen,
 }: NoiseMonitorProps) {
   const [noiseLevel, setNoiseLevel] = useState(0)
+  const [displayLevel, setDisplayLevel] = useState(0)
+  void noiseLevel // Used for external reference, displayLevel is primary
   const [isTooLoud, setIsTooLoud] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,6 +53,8 @@ export function NoiseMonitor({
   const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
   const wasTooLoudRef = useRef(false)
+  const upDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const downDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   
   const { playAlarm } = useAudio(selectedSound, customSounds, isMuted)
 
@@ -85,7 +89,10 @@ export function NoiseMonitor({
     }
     setIsListening(false)
     setNoiseLevel(0)
+    setDisplayLevel(0)
     setIsTooLoud(false)
+    if (upDelayTimerRef.current) clearTimeout(upDelayTimerRef.current)
+    if (downDelayTimerRef.current) clearTimeout(downDelayTimerRef.current)
   }, [])
 
   useEffect(() => {
@@ -101,13 +108,37 @@ export function NoiseMonitor({
       const tooLoud = level > threshold
       
       setNoiseLevel(level)
-      setIsTooLoud(tooLoud)
       
-      // Play alarm when threshold is crossed
-      if (tooLoud && !wasTooLoudRef.current) {
-        playAlarm()
+      // Delay logic for display level changes
+      const currentDisplay = displayLevel
+      if (level > currentDisplay) {
+        // Level increasing - apply upDelay
+        if (upDelayTimerRef.current) clearTimeout(upDelayTimerRef.current)
+        upDelayTimerRef.current = setTimeout(() => {
+          setDisplayLevel(level)
+          setIsTooLoud(level > threshold)
+          if (level > threshold && !wasTooLoudRef.current) {
+            playAlarm()
+          }
+          wasTooLoudRef.current = level > threshold
+        }, _upDelay * 1000)
+      } else if (level < currentDisplay) {
+        // Level decreasing - apply downDelay
+        if (downDelayTimerRef.current) clearTimeout(downDelayTimerRef.current)
+        downDelayTimerRef.current = setTimeout(() => {
+          setDisplayLevel(level)
+          setIsTooLoud(level > threshold)
+          wasTooLoudRef.current = level > threshold
+        }, _downDelay * 1000)
+      } else {
+        // Same level - update immediately
+        setDisplayLevel(level)
+        setIsTooLoud(tooLoud)
+        if (tooLoud && !wasTooLoudRef.current) {
+          playAlarm()
+        }
+        wasTooLoudRef.current = tooLoud
       }
-      wasTooLoudRef.current = tooLoud
       
       animationFrameRef.current = requestAnimationFrame(updateNoiseLevel)
     }
@@ -128,12 +159,12 @@ export function NoiseMonitor({
   }, [stopListening])
 
   const renderTheme = () => {
-    const props = { noiseLevel, threshold, isTooLoud, customImages, backgroundColor }
+    const props = { noiseLevel: displayLevel, threshold, isTooLoud, customImages, backgroundColor }
     
     // Convert to level format for new themes
     const getLevel = (): 'quiet' | 'moderate' | 'loud' | 'tooLoud' => {
       if (isTooLoud) return 'tooLoud'
-      const ratio = noiseLevel / threshold
+      const ratio = displayLevel / threshold
       if (ratio < 0.5) return 'quiet'
       if (ratio < 0.8) return 'moderate'
       return 'loud'

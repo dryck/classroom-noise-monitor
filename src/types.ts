@@ -49,3 +49,14 @@ export const WHO_RECOMMENDATIONS: ThresholdConfig = {
   loudToTooLoud: 70,
   alarmTrigger: 85
 }
+
+// Delay settings for noise level transitions
+export interface DelayConfig {
+  upDelay: number   // seconds before increasing noise level
+  downDelay: number // seconds before decreasing noise level
+}
+
+export const DEFAULT_DELAYS: DelayConfig = {
+  upDelay: 2,
+  downDelay: 4
+}

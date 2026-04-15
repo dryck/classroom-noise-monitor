@@ -7,14 +7,15 @@ interface SettingsProps {
   currentTheme: Theme
   customImages: CustomImage[]
   onThemeChange: (theme: Theme) => void
+  onDelayChange: (key: 'upDelay' | 'downDelay', value: number) => void
   onClose: () => void
 }
 
 type SettingsTab = 'themes' | 'thresholds'
 
-export function SettingsPanel({ currentTheme, customImages, onThemeChange, onClose }: SettingsProps) {
+export function SettingsPanel({ currentTheme, customImages, onThemeChange, onDelayChange, onClose }: SettingsProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('themes')
-  const { thresholds, errors, updateThreshold, resetToWHO, isUsingWHODefaults } = useSettings()
+  const { thresholds, delays, errors, updateThreshold, updateDelay, resetToWHO, isUsingWHODefaults } = useSettings()
 
   const thresholdLabels: Record<keyof ThresholdConfig, string> = {
     quietToModerate: 'Quiet → Moderate',
@@ -122,6 +123,79 @@ export function SettingsPanel({ currentTheme, customImages, onThemeChange, onClo
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* Delay Settings */}
+              <div className="space-y-6 pt-6 border-t">
+                <h3 className="font-semibold text-gray-800">Transition Delays</h3>
+                
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="font-medium text-gray-700">Up Delay</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={delays.upDelay}
+                        onChange={(e) => {
+                          updateDelay('upDelay', Number(e.target.value))
+                          onDelayChange('upDelay', Number(e.target.value))
+                        }}
+                        className="w-20 px-2 py-1 border rounded text-center"
+                        min={0.5}
+                        max={10}
+                        step={0.5}
+                      />
+                      <span className="text-gray-500">sec</span>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={10}
+                    step={0.5}
+                    value={delays.upDelay}
+                    onChange={(e) => {
+                      updateDelay('upDelay', Number(e.target.value))
+                      onDelayChange('upDelay', Number(e.target.value))
+                    }}
+                    className="w-full accent-tisa-purple"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Delay before noise level increases</p>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="font-medium text-gray-700">Down Delay</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={delays.downDelay}
+                        onChange={(e) => {
+                          updateDelay('downDelay', Number(e.target.value))
+                          onDelayChange('downDelay', Number(e.target.value))
+                        }}
+                        className="w-20 px-2 py-1 border rounded text-center"
+                        min={0.5}
+                        max={15}
+                        step={0.5}
+                      />
+                      <span className="text-gray-500">sec</span>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={15}
+                    step={0.5}
+                    value={delays.downDelay}
+                    onChange={(e) => {
+                      updateDelay('downDelay', Number(e.target.value))
+                      onDelayChange('downDelay', Number(e.target.value))
+                    }}
+                    className="w-full accent-tisa-purple"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Delay before noise level decreases</p>
+                </div>
               </div>
 
               {/* Reset Button */}

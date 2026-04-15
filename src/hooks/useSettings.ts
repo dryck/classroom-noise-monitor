@@ -1,19 +1,30 @@
 import { useState, useEffect } from 'react'
-import { ThresholdConfig, WHO_RECOMMENDATIONS } from '../types'
+import { ThresholdConfig, WHO_RECOMMENDATIONS, DelayConfig, DEFAULT_DELAYS } from '../types'
 
-const STORAGE_KEY = 'noise-monitor-thresholds'
+const THRESHOLDS_KEY = 'noise-monitor-thresholds'
+const DELAYS_KEY = 'noise-monitor-delays'
 
 export function useSettings() {
   const [thresholds, setThresholds] = useState<ThresholdConfig>(WHO_RECOMMENDATIONS)
+  const [delays, setDelays] = useState<DelayConfig>(DEFAULT_DELAYS)
   const [errors, setErrors] = useState<Partial<Record<keyof ThresholdConfig, string>>>({})
 
   // Load from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
+    const storedThresholds = localStorage.getItem(THRESHOLDS_KEY)
+    if (storedThresholds) {
       try {
-        const parsed = JSON.parse(stored)
+        const parsed = JSON.parse(storedThresholds)
         setThresholds(parsed)
+      } catch {
+        // Invalid stored data, use defaults
+      }
+    }
+    const storedDelays = localStorage.getItem(DELAYS_KEY)
+    if (storedDelays) {
+      try {
+        const parsed = JSON.parse(storedDelays)
+        setDelays(parsed)
       } catch {
         // Invalid stored data, use defaults
       }
@@ -22,8 +33,12 @@ export function useSettings() {
 
   // Save to localStorage on change
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(thresholds))
+    localStorage.setItem(THRESHOLDS_KEY, JSON.stringify(thresholds))
   }, [thresholds])
+
+  useEffect(() => {
+    localStorage.setItem(DELAYS_KEY, JSON.stringify(delays))
+  }, [delays])
 
   const validateThresholds = (newThresholds: ThresholdConfig): boolean => {
     const newErrors: Partial<Record<keyof ThresholdConfig, string>> = {}
@@ -47,12 +62,17 @@ export function useSettings() {
     if (validateThresholds(newThresholds)) {
       setThresholds(newThresholds)
     } else {
-      setThresholds(newThresholds) // Still update but show error
+      setThresholds(newThresholds)
     }
+  }
+
+  const updateDelay = (key: keyof DelayConfig, value: number) => {
+    setDelays(prev => ({ ...prev, [key]: value }))
   }
 
   const resetToWHO = () => {
     setThresholds(WHO_RECOMMENDATIONS)
+    setDelays(DEFAULT_DELAYS)
     setErrors({})
   }
 
@@ -60,12 +80,16 @@ export function useSettings() {
     thresholds.quietToModerate === WHO_RECOMMENDATIONS.quietToModerate &&
     thresholds.moderateToLoud === WHO_RECOMMENDATIONS.moderateToLoud &&
     thresholds.loudToTooLoud === WHO_RECOMMENDATIONS.loudToTooLoud &&
-    thresholds.alarmTrigger === WHO_RECOMMENDATIONS.alarmTrigger
+    thresholds.alarmTrigger === WHO_RECOMMENDATIONS.alarmTrigger &&
+    delays.upDelay === DEFAULT_DELAYS.upDelay &&
+    delays.downDelay === DEFAULT_DELAYS.downDelay
 
   return {
     thresholds,
+    delays,
     errors,
     updateThreshold,
+    updateDelay,
     resetToWHO,
     isUsingWHODefaults
   }
