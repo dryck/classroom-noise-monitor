@@ -121,43 +121,49 @@ export function NoiseMonitor({
 
       analyserRef.current.getByteFrequencyData(dataArray)
       const level = calculateNoiseLevel(dataArray)
-      const tooLoud = level > threshold
-
       onNoiseLevelChange?.(level)
 
       const currentLevelNumber = getNoiseLevelNumber(displayLevel, threshold)
       const newLevelNumber = getNoiseLevelNumber(level, threshold)
 
-      // Delay logic for display level changes
-      if (level > displayLevel) {
-        // Level increasing - apply upDelay (only start timer once)
+      // Delay logic: level only changes after sustained time at new level
+      if (newLevelNumber > currentLevelNumber) {
+        // Level increasing - apply upDelay
         if (!pendingUpRef.current) {
           pendingUpRef.current = true
           upDelayTimerRef.current = setTimeout(() => {
-            setDisplayLevel(level)
-            setIsTooLoud(level > threshold)
-            if (getNoiseLevelNumber(level, threshold) >= 4 && getNoiseLevelNumber(displayLevel, threshold) < 4) {
-              triggerAlerts()
-              triggerTTS()
+            const freshLevelNumber = getNoiseLevelNumber(level, threshold)
+            const oldLevelNumber = getNoiseLevelNumber(displayLevel, threshold)
+            if (freshLevelNumber > oldLevelNumber) {
+              setDisplayLevel(level)
+              setIsTooLoud(level > threshold)
+              if (freshLevelNumber >= 4 && oldLevelNumber < 4) {
+                triggerAlerts()
+                triggerTTS()
+              }
+              wasTooLoudRef.current = level > threshold
             }
-            wasTooLoudRef.current = level > threshold
             pendingUpRef.current = false
           }, _upDelay * 1000)
         }
         // Cancel any pending down delay
         if (downDelayTimerRef.current) clearTimeout(downDelayTimerRef.current)
         pendingDownRef.current = false
-      } else if (level < displayLevel) {
-        // Level decreasing - apply downDelay (only start timer once)
+      } else if (newLevelNumber < currentLevelNumber) {
+        // Level decreasing - apply downDelay
         if (!pendingDownRef.current) {
           pendingDownRef.current = true
           downDelayTimerRef.current = setTimeout(() => {
-            setDisplayLevel(level)
-            setIsTooLoud(level > threshold)
-            wasTooLoudRef.current = level > threshold
-            if (getNoiseLevelNumber(level, threshold) < 4) {
-              stopAlerts()
-              stopTTS()
+            const freshLevelNumber = getNoiseLevelNumber(level, threshold)
+            const oldLevelNumber = getNoiseLevelNumber(displayLevel, threshold)
+            if (freshLevelNumber < oldLevelNumber) {
+              setDisplayLevel(level)
+              setIsTooLoud(level > threshold)
+              wasTooLoudRef.current = level > threshold
+              if (freshLevelNumber < 4) {
+                stopAlerts()
+                stopTTS()
+              }
             }
             pendingDownRef.current = false
           }, _downDelay * 1000)
@@ -166,20 +172,9 @@ export function NoiseMonitor({
         if (upDelayTimerRef.current) clearTimeout(upDelayTimerRef.current)
         pendingUpRef.current = false
       } else {
-        // Same level - clear pending flags, update immediately
+        // Same level - clear pending flags, keep current display
         pendingUpRef.current = false
         pendingDownRef.current = false
-        setDisplayLevel(level)
-        setIsTooLoud(tooLoud)
-        if (newLevelNumber >= 4 && currentLevelNumber < 4) {
-          triggerAlerts()
-          triggerTTS()
-        }
-        wasTooLoudRef.current = tooLoud
-        if (newLevelNumber < 4) {
-          stopAlerts()
-          stopTTS()
-        }
       }
 
       animationFrameRef.current = requestAnimationFrame(updateNoiseLevel)
